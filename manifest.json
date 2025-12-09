@@ -1,0 +1,20 @@
+{
+  "short_name": "DoceGestão",
+  "name": "DoceGestão AI - Sistema de Vendas",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3081/3081907.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3081/3081907.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#f43f5e",
+  "background_color": "#ffffff"
+}

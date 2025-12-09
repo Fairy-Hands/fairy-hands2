@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #fb7185; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #f43f5e; }
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
