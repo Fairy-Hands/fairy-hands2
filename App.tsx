@@ -4,14 +4,20 @@ import { LayoutDashboard, Store, Package, Sparkles, Menu, LogOut, Candy, Cloud, 
 import { POS } from './POS';
 import { Inventory } from './Inventory';
 import { Dashboard } from './Dashboard';
+import { Login } from './Login';
 import { getStoreInsights } from './geminiService';
 import { fetchProducts, fetchSales, saveProduct, deleteProductRemote, saveSale, updateStockBatch, updateSalePayment } from './dataService';
 import { isCloudEnabled } from './supabaseClient';
 
 function App() {
+  // Auth State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState('');
+
+  // App State
   const [currentView, setCurrentView] = useState<AppView>(AppView.POS);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Data State
   const [products, setProducts] = useState<Product[]>([]);
@@ -22,8 +28,19 @@ function App() {
   const [aiResponse, setAiResponse] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
-  // Initial Data Load
+  // Check LocalStorage for existing session on mount
   useEffect(() => {
+    const savedUser = localStorage.getItem('docegestao_user');
+    if (savedUser) {
+      setCurrentUser(savedUser);
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  // Initial Data Load (Only when authenticated)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
     const loadData = async () => {
       setIsLoading(true);
       try {
@@ -40,17 +57,30 @@ function App() {
       }
     };
     loadData();
-  }, []);
+  }, [isAuthenticated]);
 
   // Sync to LocalStorage if NOT cloud (Backup safety)
   useEffect(() => {
-    if (!isCloudEnabled) {
+    if (!isCloudEnabled && isAuthenticated) {
       localStorage.setItem('docegestao_products', JSON.stringify(products));
       localStorage.setItem('docegestao_sales', JSON.stringify(sales));
     }
-  }, [products, sales]);
+  }, [products, sales, isAuthenticated]);
 
-  // Handlers
+  // Auth Handlers
+  const handleLogin = (username: string) => {
+    setCurrentUser(username);
+    setIsAuthenticated(true);
+    localStorage.setItem('docegestao_user', username);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setCurrentUser('');
+    localStorage.removeItem('docegestao_user');
+  };
+
+  // Business Handlers
   const handleAddProduct = async (product: Product) => {
     const newProducts = [...products, product];
     setProducts(newProducts); // Optimistic update
@@ -77,6 +107,11 @@ function App() {
     if (delivery > 0) {
       const deliveryText = `[Entrega: R$ ${delivery.toFixed(2)}]`;
       finalObs = finalObs ? `${finalObs} ${deliveryText}` : deliveryText;
+    }
+
+    // Append who made the sale if authenticated
+    if (currentUser) {
+      finalObs = finalObs ? `${finalObs} (Vend: ${currentUser})` : `(Vend: ${currentUser})`;
     }
 
     const newSale: Sale = {
@@ -143,6 +178,10 @@ function App() {
     </button>
   );
 
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   if (isLoading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50 text-rose-500 gap-4">
@@ -185,6 +224,7 @@ function App() {
                     <CloudOff size={10} /> Local
                   </span>
                 )}
+                <span className="text-[10px] text-gray-400">| {currentUser}</span>
               </div>
             </div>
           </div>
@@ -198,7 +238,10 @@ function App() {
         </nav>
 
         <div className="p-4 border-t border-gray-50">
-          <button className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-500 w-full transition-colors rounded-xl hover:bg-red-50">
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-red-500 w-full transition-colors rounded-xl hover:bg-red-50"
+          >
             <LogOut size={20} />
             <span>Sair</span>
           </button>

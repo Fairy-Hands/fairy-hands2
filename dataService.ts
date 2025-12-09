@@ -11,6 +11,32 @@ const INITIAL_PRODUCTS: Product[] = [
   { id: '6', name: 'Água Mineral', category: 'Bebidas', price: 3.00, cost: 1.00, stock: 100 },
 ];
 
+// --- Authentication ---
+
+export const verifyCredentials = async (username: string, password: string): Promise<boolean> => {
+  // 1. Tenta verificar no Supabase (se a tabela app_users existir)
+  if (isCloudEnabled && supabase) {
+    const { data, error } = await supabase
+      .from('app_users')
+      .select('*')
+      .eq('username', username)
+      .eq('password', password) // Nota: Em produção real, senhas devem ser hash (bcrypt), mas para este escopo simples usamos texto.
+      .single();
+
+    if (!error && data) {
+      return true;
+    }
+  }
+
+  // 2. Fallback Hardcoded (Para funcionar imediatamente para o usuário testar)
+  // Útil se a pessoa ainda não criou a tabela no banco
+  if (username === 'admin' && password === 'admin') {
+    return true;
+  }
+
+  return false;
+};
+
 // --- Images ---
 
 export const uploadImage = async (file: File): Promise<string | null> => {

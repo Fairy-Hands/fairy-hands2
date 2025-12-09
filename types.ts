@@ -28,6 +28,10 @@ export interface SalesSummary {
   lowStockCount: number;
 }
 
+export interface User {
+  username: string;
+}
+
 export enum AppView {
   DASHBOARD = 'DASHBOARD',
   POS = 'POS',
