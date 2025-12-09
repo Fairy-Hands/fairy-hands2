@@ -20,24 +20,35 @@ export const uploadImage = async (file: File): Promise<string | null> => {
   }
 
   try {
+    // Sanitizar nome do arquivo (remove acentos e espaços)
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const cleanName = file.name.replace(/[^a-zA-Z0-9]/g, '');
+    const fileName = `${Date.now()}_${cleanName}.${fileExt}`;
     const filePath = `${fileName}`;
+
+    console.log("Tentando upload para:", filePath);
 
     const { error: uploadError } = await supabase.storage
       .from('images') // O nome do bucket criado no painel deve ser 'images'
-      .upload(filePath, file);
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
     if (uploadError) {
-      console.error('Erro ao enviar imagem:', uploadError);
+      console.error('Erro detalhado do Supabase:', uploadError);
       throw uploadError;
     }
 
     const { data } = supabase.storage.from('images').getPublicUrl(filePath);
     return data.publicUrl;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Falha no upload:', error);
-    alert('Erro ao enviar imagem. Verifique se o Bucket "images" foi criado e é Público no Supabase.');
+    let msg = 'Erro ao enviar imagem.';
+    if (error.message && error.message.includes('row-level security')) {
+      msg = 'Erro de Permissão: Você precisa criar uma Policy no Supabase Storage permitindo INSERT para o bucket "images".';
+    }
+    alert(msg);
     return null;
   }
 };
@@ -73,7 +84,7 @@ export const saveProduct = async (product: Product, isUpdate: boolean) => {
       await supabase.from('products').insert(product);
     }
   } else {
-    // LocalStorage Logic (handled in App.tsx state update, this is just for consistency if extended)
+    // LocalStorage Logic
     return Promise.resolve(); 
   }
 };
@@ -115,7 +126,6 @@ export const updateSalePayment = async (saleId: string, newMethod: 'cash' | 'car
   if (isCloudEnabled && supabase) {
     await supabase.from('sales').update({ paymentMethod: newMethod }).eq('id', saleId);
   }
-  // LocalStorage logic handled in App.tsx via state sync
 };
 
 // --- Stock Updates ---
